@@ -58,7 +58,7 @@ namespace PlaylogAnalyser
             var valids = ParseFiles(files);
             var dateFiltered = valids.AsParallel().Select(x => (x.file, timestamps: x.timestamps.Where(y => y.start >= start && y.end <= end)));
             var summed = dateFiltered.Select(x => (x.file, sum: x.timestamps.Sum(y => (y.end - y.start).TotalSeconds))).Where(x => x.sum > 0);
-            var ranks = GetRank(summed.AsSequential(), order);
+            var ranks = GetRank(summed, order);
 
             foreach (var (file, sum) in ranks)
             {
