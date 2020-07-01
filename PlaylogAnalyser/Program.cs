@@ -4,7 +4,6 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 
 namespace PlaylogAnalyser
 {
@@ -100,7 +99,7 @@ namespace PlaylogAnalyser
                 {
                     var origin = Console.ForegroundColor;
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine($"{fileName } {e.Message}");
+                    Console.Error.WriteLine($"{fileName} {e.Message}");
                     Console.ForegroundColor = origin;
                     yield break;
                 }
