@@ -18,6 +18,7 @@ namespace PlaylogAnalyser
         static int Main(string[] args)
         {
             //Analyse(@"E:\Notes\mpvlogs", DateTime.UnixEpoch, DateTime.Now, SortOrder.Duration);
+            //Console.ReadLine();
             //return 0;
 
             var rootCommand = new RootCommand
@@ -129,10 +130,7 @@ namespace PlaylogAnalyser
 
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
-            // Unix timestamp is seconds past epoch
-            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddMilliseconds(unixTimeStamp).ToLocalTime();
-            return dtDateTime;
+            return DateTime.UnixEpoch.AddMilliseconds(unixTimeStamp).ToLocalTime();
         }
     }
 }
