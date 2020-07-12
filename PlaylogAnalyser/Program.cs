@@ -86,7 +86,7 @@ namespace PlaylogAnalyser
 
         static IEnumerable<(DateTime start, DateTime end)> ParseFile(string filePath, string fileName)
         {
-            var reader = new StreamReader(filePath);
+            using var reader = new StreamReader(filePath);
 
             string line;
             while ((line = reader.ReadLine()) != null)
