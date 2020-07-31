@@ -17,10 +17,11 @@ namespace PlaylogAnalyser
     {
         static int Main(string[] args)
         {
-            //Analyse(@"E:\Notes\mpvlogs", DateTime.UnixEpoch, DateTime.Now, SortOrder.Duration);
-            //Console.ReadLine();
-            //return 0;
-
+#if DEBUG
+            Analyse(@"E:\Notes\mpvlogs", DateTime.UnixEpoch, DateTime.Now, SortOrder.Duration);
+            Console.ReadLine();
+            return 0;
+#endif
             var rootCommand = new RootCommand
             {
                 new Option<string>(
@@ -96,6 +97,10 @@ namespace PlaylogAnalyser
                 {
                     output = ParseLine(line);
                 }
+                catch (InvalidDataException)
+                {
+                    continue;
+                }
                 catch (Exception e)
                 {
                     var origin = Console.ForegroundColor;
@@ -110,11 +115,15 @@ namespace PlaylogAnalyser
 
         static (DateTime start, DateTime end) ParseLine(string line)
         {
+            if (string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))
+            {
+                throw new InvalidDataException("This is allowable");
+            }
             var splits = line.Split(" ");
 
             if (splits.Length != 2)
             {
-                throw new Exception("Parse failed: Line split does not yield 2 parts.");
+                throw new FormatException("Parse failed: Line split does not yield 2 parts.");
             }
 
             var start = double.Parse(splits[0]);
@@ -122,7 +131,7 @@ namespace PlaylogAnalyser
 
             if (start > end)
             {
-                throw new Exception("Bad time records.");
+                throw new Exception("Parse failed: Bad time records.");
             }
 
             return (UnixTimeStampToDateTime(start), UnixTimeStampToDateTime(end));
