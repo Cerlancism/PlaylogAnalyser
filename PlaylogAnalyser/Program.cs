@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.CommandLine.Builder;
 using System.IO;
 using System.Linq;
 
@@ -18,9 +19,23 @@ namespace PlaylogAnalyser
         static int Main(string[] args)
         {
 #if DEBUG
-            Analyse(@"E:\Notes\mpvlogs", DateTime.UnixEpoch, DateTime.Now, SortOrder.Duration);
-            Console.ReadLine();
-            return 0;
+            if (args.Length == 0)
+            {
+                Main(new[]
+                {
+                    "--path", @"E:\Notes\mpvlogs",
+                    "--start", DateTime.UnixEpoch.ToString(),
+                    "--end", DateTime.Now.ToString(),
+                    "--order", SortOrder.Duration.ToString()
+                });
+                Main(new[]
+                {
+                    "compare",
+                    "--path", @"E:\Notes\mpvlogs",
+                });
+                Console.ReadLine();
+                return 0;
+            }
 #endif
             var rootCommand = new RootCommand
             {
@@ -48,22 +63,57 @@ namespace PlaylogAnalyser
             // Note that the parameters of the handler method are matched according to the names of the options
             rootCommand.Handler = CommandHandler.Create<string, DateTime, DateTime, SortOrder>(Analyse);
 
-            var compareCommand = new Command("compare");
+            var compareCommand = new Command("compare", "Retrieve the logs from file names in standard input");
 
-            compareCommand.Handler = CommandHandler.Create(Compare);
+            var sourceOpt = new Option<string>(
+                "--path",
+                getDefaultValue: () => Directory.GetCurrentDirectory(),
+                description: "Log directory"
+            );
+            compareCommand.AddOption(sourceOpt);
+
+            compareCommand.Handler = CommandHandler.Create<string>(Compare);
 
             rootCommand.AddCommand(compareCommand);
-            
+
             // Parse the incoming args and invoke the handler
             return rootCommand.InvokeAsync(args).Result;
         }
 
-        static void Compare()
+        static void Compare(string path)
         {
-            Console.WriteLine("Comparing");
+            Console.WriteLine($"Comparing {path}");
+            
+            var data = GetAnalysables(path, DateTime.UnixEpoch, DateTime.Now).ToDictionary(x => x.file, x => x.sum);
+
+            string line;
+            while ((line = Console.ReadLine()) != null)
+            {
+                try
+                {
+                    var target = Path.GetFileNameWithoutExtension(line);
+                    var entry = data[target];
+                    Console.WriteLine($"{target,-110} {entry,6:N0} s");
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"{e.GetType().Name}: {e.Message}");
+                }
+            }
         }
 
         static void Analyse(string path, DateTime start, DateTime end, SortOrder order)
+        {
+            var summed = GetAnalysables(path, start, end);
+            var ranks = GetRank(summed, order);
+
+            foreach (var (file, sum) in ranks)
+            {
+                Console.WriteLine($"{file,-110} {sum,6:N0} s");
+            }
+        }
+
+        static IEnumerable<(string file, double sum)> GetAnalysables(string path, DateTime start, DateTime end)
         {
             start = start.ToLocalTime();
             end = end.ToLocalTime();
@@ -72,12 +122,7 @@ namespace PlaylogAnalyser
             var valids = ParseFiles(files);
             var dateFiltered = valids.AsParallel().Select(x => (x.file, timestamps: x.timestamps.Where(y => y.start >= start && y.end <= end)));
             var summed = dateFiltered.Select(x => (x.file, sum: x.timestamps.Sum(y => (y.end - y.start).TotalSeconds))).Where(x => x.sum > 0);
-            var ranks = GetRank(summed, order);
-
-            foreach (var (file, sum) in ranks)
-            {
-                Console.WriteLine($"{file,-110} {sum,6:N0} s");
-            }
+            return summed;
         }
 
         static IEnumerable<(string file, double sum)> GetRank(IEnumerable<(string file, double sum)> summed, SortOrder sortOrder) => sortOrder switch
