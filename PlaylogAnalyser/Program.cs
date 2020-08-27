@@ -42,13 +42,25 @@ namespace PlaylogAnalyser
                     "Sort ordering")
             };
 
+
             rootCommand.Description = "MPV Playlog analyser";
 
             // Note that the parameters of the handler method are matched according to the names of the options
             rootCommand.Handler = CommandHandler.Create<string, DateTime, DateTime, SortOrder>(Analyse);
 
+            var compareCommand = new Command("compare");
+
+            compareCommand.Handler = CommandHandler.Create(Compare);
+
+            rootCommand.AddCommand(compareCommand);
+            
             // Parse the incoming args and invoke the handler
             return rootCommand.InvokeAsync(args).Result;
+        }
+
+        static void Compare()
+        {
+            Console.WriteLine("Comparing");
         }
 
         static void Analyse(string path, DateTime start, DateTime end, SortOrder order)
